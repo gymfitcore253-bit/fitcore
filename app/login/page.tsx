@@ -10,49 +10,29 @@ const supabase = createClient();
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dumbbell, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Dumbbell, AlertCircle } from "lucide-react";
 
-export default function SignupPage() {
+export default function LoginPage() {
   const router = useRouter();
-  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSignup(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    // Step 1: create the Supabase auth user
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (signUpError) {
-      setError(signUpError.message);
+    if (error) {
+      // Supabase returns human-readable messages — surface them directly
+      setError(error.message);
       setLoading(false);
-      return;
+    } else {
+      router.push("/dashboard");
     }
-
-    // Step 2: write a matching row to the profiles table.
-    // We use the auth user's UUID as the profile id so the two stay linked.
-    // gym_id is omitted here — an admin will assign the user to a gym later.
-    if (data.user) {
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: data.user.id,
-        full_name: fullName,
-        role: "member",
-      });
-
-      if (profileError) {
-        setError("Account created but profile setup failed: " + profileError.message);
-        setLoading(false);
-        return;
-      }
-    }
-
-    // Send new users to onboarding so they can create and name their gym
-    router.push("/onboarding");
   }
 
   return (
@@ -66,22 +46,13 @@ export default function SignupPage() {
           <span className="text-2xl font-bold tracking-tight">FitCore</span>
         </div>
 
-        <div className="space-y-8">
-          <h1 className="text-4xl font-bold leading-tight">
-            Your gym journey<br />starts here.
+        <div>
+          <h1 className="text-4xl font-bold leading-tight mb-4">
+            Manage your gym,<br />grow your community.
           </h1>
-          <ul className="space-y-4 text-gray-300">
-            {[
-              "Track members and attendance",
-              "Manage training plans and sessions",
-              "Monitor payments and revenue",
-            ].map((feature) => (
-              <li key={feature} className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
-                <span>{feature}</span>
-              </li>
-            ))}
-          </ul>
+          <p className="text-gray-400 text-lg leading-relaxed">
+            The all-in-one platform for gym owners,<br />trainers, and members.
+          </p>
         </div>
 
         <p className="text-gray-600 text-sm">© 2025 FitCore. All rights reserved.</p>
@@ -99,24 +70,11 @@ export default function SignupPage() {
           </div>
 
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900">Create your account</h2>
-            <p className="text-gray-500 mt-1">Get started with FitCore today</p>
+            <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
+            <p className="text-gray-500 mt-1">Sign in to your account to continue</p>
           </div>
 
-          <form onSubmit={handleSignup} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full name</Label>
-              <Input
-                id="fullName"
-                type="text"
-                placeholder="John Smith"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                autoComplete="name"
-              />
-            </div>
-
+          <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
               <Input
@@ -139,13 +97,11 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
-                autoComplete="new-password"
+                autoComplete="current-password"
               />
-              <p className="text-xs text-gray-400">Minimum 6 characters</p>
             </div>
 
-            {/* Error banner */}
+            {/* Error banner — only visible when Supabase returns an error */}
             {error && (
               <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -154,14 +110,14 @@ export default function SignupPage() {
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating account…" : "Create account"}
+              {loading ? "Signing in…" : "Sign in"}
             </Button>
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-6">
-            Already have an account?{" "}
-            <Link href="/login" className="text-gray-900 font-medium hover:underline">
-              Sign in
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="text-gray-900 font-medium hover:underline">
+              Create one
             </Link>
           </p>
         </div>
